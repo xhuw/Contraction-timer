@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contraction Timer</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="halftone-bg"></div>
+
+  <header>
+    <h1 class="title">CONTRACTION<br><span class="title-accent">TIMER</span></h1>
+    <div class="subtitle">Track · Time · Know When To Go</div>
+  </header>
+
+  <main>
+    <!-- STATUS BANNER -->
+    <div id="status-banner" class="status-banner status-ok">
+      <span id="status-icon">✓</span>
+      <span id="status-text">Keep timing — you're doing great!</span>
+    </div>
+
+    <!-- LIVE TIMER -->
+    <section class="timer-section">
+      <div class="timer-card" id="timer-card">
+        <div class="timer-label" id="timer-label">READY</div>
+        <div class="timer-display" id="timer-display">00:00</div>
+        <div class="timer-sub" id="timer-sub">Press START to begin a contraction</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-start" id="btn-start" onclick="startContraction()">
+          START
+        </button>
+        <button class="btn btn-stop" id="btn-stop" onclick="stopContraction()" disabled>
+          STOP
+        </button>
+        <button class="btn btn-reset" id="btn-reset" onclick="resetAll()">
+          RESET
+        </button>
+      </div>
+    </section>
+
+    <!-- STATS ROW -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">CONTRACTIONS</div>
+        <div class="stat-value" id="stat-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">AVG DURATION</div>
+        <div class="stat-value" id="stat-avg-dur">—</div>
+        <div class="stat-unit">seconds</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">AVG FREQUENCY</div>
+        <div class="stat-value" id="stat-avg-freq">—</div>
+        <div class="stat-unit">minutes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">LAST DURATION</div>
+        <div class="stat-value" id="stat-last-dur">—</div>
+        <div class="stat-unit">seconds</div>
+      </div>
+    </section>
+
+    <!-- GRAPHS -->
+    <section class="graphs-section">
+      <div class="graph-card">
+        <h2 class="graph-title">DURATION <span class="graph-unit">(seconds)</span></h2>
+        <div class="chart-wrap">
+          <canvas id="durationChart"></canvas>
+        </div>
+        <div class="threshold-legend">
+          <span class="dot dot-ok"></span> Normal
+          <span class="dot dot-warn"></span> ≥ 45s
+          <span class="dot dot-danger"></span> ≥ 60s
+        </div>
+      </div>
+      <div class="graph-card">
+        <h2 class="graph-title">FREQUENCY <span class="graph-unit">(minutes between)</span></h2>
+        <div class="chart-wrap">
+          <canvas id="frequencyChart"></canvas>
+        </div>
+        <div class="threshold-legend">
+          <span class="dot dot-ok"></span> > 10 min
+          <span class="dot dot-warn"></span> 5–10 min
+          <span class="dot dot-danger"></span> ≤ 5 min
+        </div>
+      </div>
+    </section>
+
+    <!-- HOSPITAL INDICATOR -->
+    <section class="hospital-section" id="hospital-section">
+      <div class="hospital-card" id="hospital-card">
+        <div class="hospital-icon">🏥</div>
+        <div class="hospital-title" id="hospital-title">MONITORING</div>
+        <div class="hospital-rule" id="hospital-rule">5-1-1 Rule: contractions every 5 min, lasting 1 min, for 1 hour</div>
+      </div>
+    </section>
+
+    <!-- LOG TABLE -->
+    <section class="log-section">
+      <h2 class="log-title">CONTRACTION LOG</h2>
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Start Time</th>
+              <th>Duration (s)</th>
+              <th>Interval (min)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="log-body">
+            <tr class="log-empty"><td colspan="5">No contractions recorded yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
