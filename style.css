@@ -140,6 +140,29 @@ main {
   box-shadow: 8px 8px 0 var(--black);
 }
 
+/* Rest-between-contractions — calm, muted palette */
+.timer-card.resting {
+  background: #EEF4FF;
+  border-color: #8BA8D4;
+  box-shadow: 6px 6px 0 #8BA8D4;
+}
+
+.timer-card.resting .timer-label {
+  color: #5573A0;
+  opacity: 1;
+  letter-spacing: 5px;
+}
+
+.timer-card.resting .timer-display {
+  color: #5573A0;
+  font-size: clamp(4rem, 14vw, 8rem);
+}
+
+.timer-card.resting .timer-sub {
+  color: #5573A0;
+  opacity: 0.8;
+}
+
 .timer-label {
   font-family: 'Anton', sans-serif;
   font-size: 1rem;
@@ -377,8 +400,10 @@ main {
   font-size: 0.85rem;
   font-weight: 700;
   opacity: 0.75;
-  max-width: 380px;
+  max-width: 420px;
   text-align: left;
+  white-space: pre-line;
+  line-height: 1.5;
 }
 
 .hospital-card.danger .hospital-rule,

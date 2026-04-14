@@ -1,15 +1,23 @@
 /* ─── CONTRACTION TIMER APP ─── */
 
-// ── State ──
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+
 const state = {
-  contractions: [],   // { startTime, endTime, duration, interval }
-  timerInterval: null,
-  contractionStart: null,
+  contractions: [],     // { startTime, endTime, duration, interval }
+  contractionStart: null, // timestamp ms — set while active
   isActive: false,
-  elapsedSeconds: 0,
+  timerInterval: null,  // active contraction tick
+  restInterval: null,   // rest-between tick
 };
 
-// ── DOM refs ──
+const STORAGE_KEY = 'contraction-timer-v1';
+
+// ═══════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════
+
 const timerDisplay = document.getElementById('timer-display');
 const timerLabel   = document.getElementById('timer-label');
 const timerSub     = document.getElementById('timer-sub');
@@ -24,15 +32,17 @@ const hospitalTitle= document.getElementById('hospital-title');
 const hospitalRule = document.getElementById('hospital-rule');
 const logBody      = document.getElementById('log-body');
 
-// Stats
 const statCount   = document.getElementById('stat-count');
 const statAvgDur  = document.getElementById('stat-avg-dur');
 const statAvgFreq = document.getElementById('stat-avg-freq');
 const statLastDur = document.getElementById('stat-last-dur');
 
-// ── Chart setup ──
-const durationCtx   = document.getElementById('durationChart').getContext('2d');
-const frequencyCtx  = document.getElementById('frequencyChart').getContext('2d');
+// ═══════════════════════════════════════
+// CHART SETUP
+// ═══════════════════════════════════════
+
+const durationCtx  = document.getElementById('durationChart').getContext('2d');
+const frequencyCtx = document.getElementById('frequencyChart').getContext('2d');
 
 const chartDefaults = {
   responsive: true,
@@ -63,62 +73,49 @@ const chartDefaults = {
 
 const durationChart = new Chart(durationCtx, {
   type: 'bar',
-  data: {
-    labels: [],
-    datasets: [{
-      data: [],
-      backgroundColor: [],
-      borderColor: '#0D0D0D',
-      borderWidth: 2,
-      borderRadius: 6,
-    }],
-  },
+  data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderColor: '#0D0D0D', borderWidth: 2, borderRadius: 6 }] },
   options: {
     ...chartDefaults,
-    plugins: {
-      ...chartDefaults.plugins,
-      annotation: undefined,
-    },
-    scales: {
-      ...chartDefaults.scales,
-      y: {
-        ...chartDefaults.scales.y,
-        title: { display: true, text: 'seconds', font: { family: 'Nunito, sans-serif', weight: '700', size: 11 } },
-      },
-    },
+    scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, title: { display: true, text: 'seconds', font: { family: 'Nunito, sans-serif', weight: '700', size: 11 } } } },
   },
 });
 
 const frequencyChart = new Chart(frequencyCtx, {
   type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      data: [],
-      backgroundColor: 'rgba(0,207,255,0.25)',
-      borderColor: '#0D0D0D',
-      borderWidth: 3,
-      pointBackgroundColor: [],
-      pointBorderColor: '#0D0D0D',
-      pointBorderWidth: 2,
-      pointRadius: 6,
-      fill: true,
-      tension: 0.4,
-    }],
-  },
+  data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(0,207,255,0.25)', borderColor: '#0D0D0D', borderWidth: 3, pointBackgroundColor: [], pointBorderColor: '#0D0D0D', pointBorderWidth: 2, pointRadius: 6, fill: true, tension: 0.4 }] },
   options: {
     ...chartDefaults,
-    scales: {
-      ...chartDefaults.scales,
-      y: {
-        ...chartDefaults.scales.y,
-        title: { display: true, text: 'minutes', font: { family: 'Nunito, sans-serif', weight: '700', size: 11 } },
-      },
-    },
+    scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, title: { display: true, text: 'minutes', font: { family: 'Nunito, sans-serif', weight: '700', size: 11 } } } },
   },
 });
 
-// ── Timer helpers ──
+// ═══════════════════════════════════════
+// LOCALSTORAGE
+// ═══════════════════════════════════════
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    contractions: state.contractions,
+    contractionStart: state.contractionStart,
+  }));
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    state.contractions = saved.contractions || [];
+    state.contractionStart = saved.contractionStart || null;
+  } catch {
+    // corrupt data — ignore
+  }
+}
+
+// ═══════════════════════════════════════
+// FORMAT HELPERS
+// ═══════════════════════════════════════
+
 function formatTime(totalSeconds) {
   const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
   const s = (totalSeconds % 60).toString().padStart(2, '0');
@@ -129,30 +126,77 @@ function formatHHMM(date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-// ── Start contraction ──
+// ═══════════════════════════════════════
+// REST COUNTER (between contractions)
+// ═══════════════════════════════════════
+
+function startRestCounter() {
+  stopRestCounter();
+  const lastEnd = state.contractions.length > 0
+    ? state.contractions[state.contractions.length - 1].endTime
+    : null;
+
+  if (!lastEnd) return;
+
+  timerCard.classList.remove('active');
+  timerCard.classList.add('resting');
+  timerLabel.textContent = 'REST';
+
+  function tick() {
+    const elapsed = Math.floor((Date.now() - lastEnd) / 1000);
+    timerDisplay.textContent = formatTime(elapsed);
+    timerDisplay.style.color = '';
+
+    if (elapsed < 60) {
+      timerSub.textContent = 'Resting — press START when the next contraction begins';
+    } else {
+      const mins = (elapsed / 60).toFixed(1);
+      timerSub.textContent = `${mins} min rest so far`;
+    }
+  }
+
+  tick();
+  state.restInterval = setInterval(tick, 500);
+}
+
+function stopRestCounter() {
+  if (state.restInterval) {
+    clearInterval(state.restInterval);
+    state.restInterval = null;
+  }
+  timerCard.classList.remove('resting');
+}
+
+// ═══════════════════════════════════════
+// START CONTRACTION
+// ═══════════════════════════════════════
+
 function startContraction() {
   if (state.isActive) return;
 
+  stopRestCounter();
+
   state.isActive = true;
   state.contractionStart = Date.now();
-  state.elapsedSeconds = 0;
+
+  saveState();
 
   timerCard.classList.add('active');
   timerLabel.textContent = 'CONTRACTION';
   timerSub.textContent   = 'Contraction in progress…';
+  timerDisplay.style.color = '';
   btnStart.disabled = true;
   btnStop.disabled  = false;
 
   addRipple(btnStart);
 
   state.timerInterval = setInterval(() => {
-    state.elapsedSeconds = Math.floor((Date.now() - state.contractionStart) / 1000);
-    timerDisplay.textContent = formatTime(state.elapsedSeconds);
+    const elapsed = Math.floor((Date.now() - state.contractionStart) / 1000);
+    timerDisplay.textContent = formatTime(elapsed);
 
-    // Live colour feedback while timing
-    if (state.elapsedSeconds >= 60) {
+    if (elapsed >= 60) {
       timerDisplay.style.color = '#FF1744';
-    } else if (state.elapsedSeconds >= 45) {
+    } else if (elapsed >= 45) {
       timerDisplay.style.color = '#FF6D00';
     } else {
       timerDisplay.style.color = '';
@@ -160,37 +204,34 @@ function startContraction() {
   }, 250);
 }
 
-// ── Stop contraction ──
+// ═══════════════════════════════════════
+// STOP CONTRACTION
+// ═══════════════════════════════════════
+
 function stopContraction() {
   if (!state.isActive) return;
 
   clearInterval(state.timerInterval);
+  state.timerInterval = null;
   state.isActive = false;
 
   const endTime  = Date.now();
   const duration = Math.floor((endTime - state.contractionStart) / 1000);
 
-  // Calculate interval since last contraction's START time
   let interval = null;
   if (state.contractions.length > 0) {
     const prev = state.contractions[state.contractions.length - 1];
-    interval = (state.contractionStart - prev.startTime) / 60000; // minutes
+    interval = (state.contractionStart - prev.startTime) / 60000;
   }
 
-  const contraction = {
-    startTime: state.contractionStart,
-    endTime,
-    duration,
-    interval,
-  };
-
+  const contraction = { startTime: state.contractionStart, endTime, duration, interval };
   state.contractions.push(contraction);
+  state.contractionStart = null;
+
+  saveState();
 
   timerCard.classList.remove('active');
-  timerLabel.textContent = 'LAST';
-  timerDisplay.textContent = formatTime(duration);
   timerDisplay.style.color = '';
-  timerSub.textContent = `Contraction #${state.contractions.length} recorded`;
   btnStart.disabled = false;
   btnStop.disabled  = true;
 
@@ -200,53 +241,58 @@ function stopContraction() {
   updateCharts();
   updateLog(contraction);
   updateStatus();
+  startRestCounter();
 }
 
-// ── Reset ──
+// ═══════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════
+
 function resetAll() {
   if (state.isActive) {
     clearInterval(state.timerInterval);
+    state.timerInterval = null;
     state.isActive = false;
   }
+  stopRestCounter();
 
   state.contractions = [];
   state.contractionStart = null;
-  state.elapsedSeconds = 0;
+  localStorage.removeItem(STORAGE_KEY);
 
-  timerCard.classList.remove('active');
-  timerLabel.textContent    = 'READY';
-  timerDisplay.textContent  = '00:00';
-  timerDisplay.style.color  = '';
-  timerSub.textContent      = 'Press START to begin a contraction';
+  timerCard.classList.remove('active', 'resting');
+  timerLabel.textContent   = 'READY';
+  timerDisplay.textContent = '00:00';
+  timerDisplay.style.color = '';
+  timerSub.textContent     = 'Press START to begin a contraction';
   btnStart.disabled = false;
   btnStop.disabled  = true;
 
-  // Reset stats
   animateStat(statCount,   '0');
   animateStat(statAvgDur,  '—');
   animateStat(statAvgFreq, '—');
   animateStat(statLastDur, '—');
 
-  // Clear charts
-  durationChart.data.labels   = [];
+  durationChart.data.labels = [];
   durationChart.data.datasets[0].data = [];
   durationChart.data.datasets[0].backgroundColor = [];
   durationChart.update();
 
-  frequencyChart.data.labels   = [];
+  frequencyChart.data.labels = [];
   frequencyChart.data.datasets[0].data = [];
   frequencyChart.data.datasets[0].pointBackgroundColor = [];
   frequencyChart.update();
 
-  // Reset log
   logBody.innerHTML = '<tr class="log-empty"><td colspan="5">No contractions recorded yet</td></tr>';
 
-  // Reset status
   setStatus('ok', '✓', 'Keep timing — you\'re doing great!');
-  setHospital('ok', 'MONITORING', '5-1-1 Rule: contractions every 5 min, lasting 1 min, for 1 hour');
+  setHospital('ok', 'MONITORING', 'NHS guidance: call your maternity unit when contractions are regular, every 5 min, lasting ≥45s.');
 }
 
-// ── Stats ──
+// ═══════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════
+
 function updateStats() {
   const cs = state.contractions;
   const n  = cs.length;
@@ -267,11 +313,14 @@ function updateStats() {
 function animateStat(el, value) {
   el.textContent = value;
   el.classList.remove('bump');
-  void el.offsetWidth; // reflow to restart animation
+  void el.offsetWidth;
   el.classList.add('bump');
 }
 
-// ── Charts ──
+// ═══════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════
+
 function durationColor(s) {
   if (s >= 60) return '#FF1744';
   if (s >= 45) return '#FF6D00';
@@ -288,20 +337,12 @@ function updateCharts() {
   const cs     = state.contractions;
   const labels = cs.map((_, i) => `#${i + 1}`);
 
-  // Duration chart
-  const durations = cs.map(c => c.duration);
-  const durColors = durations.map(durationColor);
-
   durationChart.data.labels = labels;
-  durationChart.data.datasets[0].data = durations;
-  durationChart.data.datasets[0].backgroundColor = durColors;
+  durationChart.data.datasets[0].data = cs.map(c => c.duration);
+  durationChart.data.datasets[0].backgroundColor = cs.map(c => durationColor(c.duration));
   durationChart.update();
 
-  // Frequency chart — only entries with known interval
-  const freqLabels = [];
-  const freqData   = [];
-  const freqColors = [];
-
+  const freqLabels = [], freqData = [], freqColors = [];
   cs.forEach((c, i) => {
     if (c.interval !== null) {
       freqLabels.push(`#${i} → #${i + 1}`);
@@ -316,20 +357,34 @@ function updateCharts() {
   frequencyChart.update();
 }
 
-// ── Log ──
+// ═══════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════
+
+function buildLog() {
+  logBody.innerHTML = '';
+  if (state.contractions.length === 0) {
+    logBody.innerHTML = '<tr class="log-empty"><td colspan="5">No contractions recorded yet</td></tr>';
+    return;
+  }
+  // Render all rows (newest first, no animation on restore)
+  [...state.contractions].reverse().forEach((c, ri) => {
+    const i = state.contractions.length - 1 - ri;
+    appendLogRow(c, i + 1, false);
+  });
+}
+
 function updateLog(contraction) {
-  // Remove empty placeholder
   const empty = logBody.querySelector('.log-empty');
   if (empty) empty.remove();
+  appendLogRow(contraction, state.contractions.length, true);
+}
 
-  const n        = state.contractions.length;
+function appendLogRow(contraction, n, animate) {
   const status   = contractionStatus(contraction);
-  const interval = contraction.interval !== null
-    ? contraction.interval.toFixed(1)
-    : '—';
-
+  const interval = contraction.interval !== null ? contraction.interval.toFixed(1) : '—';
   const row = document.createElement('tr');
-  row.className = `log-${status.level} new-row`;
+  row.className = `log-${status.level}${animate ? ' new-row' : ''}`;
   row.innerHTML = `
     <td>${n}</td>
     <td>${formatHHMM(new Date(contraction.startTime))}</td>
@@ -351,32 +406,55 @@ function contractionStatus(c) {
   return                               { level: 'ok',    label: 'OK' };
 }
 
-// ── Status banner + hospital indicator ──
+// ═══════════════════════════════════════
+// NHS HOSPITAL GUIDANCE
+// Based on: nhs.uk/pregnancy/labour-and-birth
+//
+// STAY HOME  — irregular, >10 min apart, <45s
+// CALL UNIT  — regular pattern forming, 5–10 min apart, or ≥45s duration
+// GO NOW     — every ≤5 min, lasting ≥45s, consistently (3+ contractions)
+//
+// Always call immediately for: waters breaking, heavy bleeding,
+// reduced baby movements, or if you are worried at any point.
+// ═══════════════════════════════════════
+
 function updateStatus() {
   const cs = state.contractions;
   const n  = cs.length;
 
-  if (n === 0) return;
+  if (n === 0) {
+    setStatus('ok', '✓', 'Keep timing — you\'re doing great!');
+    setHospital('ok', 'MONITORING', 'NHS guidance: call your maternity unit when contractions are regular, every 5 min, lasting ≥ 45 seconds.');
+    return;
+  }
 
-  // Use last 6 contractions for assessment
-  const recent   = cs.slice(-6);
-  const avgDur   = recent.reduce((s, c) => s + c.duration, 0) / recent.length;
-  const intervals= recent.filter(c => c.interval !== null).map(c => c.interval);
-  const avgFreq  = intervals.length ? intervals.reduce((s, v) => s + v, 0) / intervals.length : Infinity;
+  // Assess the most recent contractions (up to last 6)
+  const recent    = cs.slice(-6);
+  const avgDur    = recent.reduce((s, c) => s + c.duration, 0) / recent.length;
+  const intervals = recent.filter(c => c.interval !== null).map(c => c.interval);
+  const avgFreq   = intervals.length ? intervals.reduce((s, v) => s + v, 0) / intervals.length : Infinity;
+  const lastFreq  = intervals.length ? intervals[intervals.length - 1] : Infinity;
 
-  // 5-1-1 rule: ≤5 min apart, ≥60s long, for ≥1 hour (we approximate with enough data)
-  const rule511 = avgFreq <= 5 && avgDur >= 60;
-  const closeToRule = avgFreq <= 7 || avgDur >= 45;
+  // NHS: go to hospital — contractions every 5 min, lasting ≥45s, established pattern (3+)
+  const goNow = n >= 3 && avgFreq <= 5 && avgDur >= 45;
 
-  if (rule511 || (n >= 3 && avgFreq <= 5 && avgDur >= 45)) {
-    setStatus('danger', '🚨', 'GO TO THE HOSPITAL NOW! Contractions are frequent and long.');
-    setHospital('danger', 'GO TO HOSPITAL!', '5-1-1 Rule met: contractions ≤ 5 min apart, ≥ 45 seconds long.');
-  } else if (closeToRule) {
-    setStatus('warn', '⚠️', 'Call your provider! Contractions are getting closer or longer.');
-    setHospital('warn', 'CALL YOUR PROVIDER', 'Contractions are ≤ 7 min apart or ≥ 45 seconds — getting close to the 5-1-1 rule.');
+  // NHS: call maternity unit — contractions getting regular (5–10 min) or lasting ≥45s
+  const callUnit = (avgFreq <= 10 && avgFreq > 5 && avgDur >= 30)
+                || (avgDur >= 45)
+                || (lastFreq <= 5 && n >= 2);
+
+  if (goNow) {
+    setStatus('danger', '🚨', 'Go to your maternity unit now — contractions are regular, frequent and strong.');
+    setHospital('danger', 'GO TO HOSPITAL', 'NHS: contractions every ≤ 5 min, lasting ≥ 45 sec. Go to your maternity unit or call 999 if needed.\n\nAlso go immediately if: waters break · heavy bleeding · baby not moving normally.');
+  } else if (callUnit) {
+    setStatus('warn', '📞', 'Call your midwife or maternity unit — contractions are establishing.');
+    setHospital('warn', 'CALL YOUR MIDWIFE', 'NHS: contractions are getting regular (every 5–10 min) or lasting ≥ 45 sec — call your maternity unit now.\n\nCall immediately if: waters break · heavy bleeding · baby not moving normally · you\'re worried.');
   } else {
-    setStatus('ok', '✓', `${n} contraction${n === 1 ? '' : 's'} recorded. Keep monitoring.`);
-    setHospital('ok', 'MONITORING', '5-1-1 Rule: contractions every 5 min, lasting 1 min, for 1 hour — then go!');
+    const msg = n === 1
+      ? '1 contraction recorded. Keep timing — call your midwife if you\'re unsure.'
+      : `${n} contractions recorded. Keep monitoring — contractions are still irregular or mild.`;
+    setStatus('ok', '✓', msg);
+    setHospital('ok', 'MONITORING', 'NHS: stay at home in early labour — rest, eat lightly, stay hydrated.\n\nCall your maternity unit if contractions become every 5 min and last ≥ 45 sec, or if you\'re worried at any time.');
   }
 }
 
@@ -387,34 +465,85 @@ function setStatus(level, icon, text) {
 }
 
 function setHospital(level, title, rule) {
-  hospitalCard.className = `hospital-card ${level === 'ok' ? '' : level}`;
+  hospitalCard.className = `hospital-card${level !== 'ok' ? ' ' + level : ''}`;
   hospitalTitle.textContent = title;
   hospitalRule.textContent  = rule;
 }
 
-// ── Ripple effect ──
+// ═══════════════════════════════════════
+// RIPPLE
+// ═══════════════════════════════════════
+
 function addRipple(btn) {
   const ripple = document.createElement('span');
   ripple.className = 'ripple';
   const size = Math.max(btn.offsetWidth, btn.offsetHeight);
   ripple.style.width  = ripple.style.height = `${size}px`;
-  ripple.style.left   = `${btn.offsetWidth / 2  - size / 2}px`;
+  ripple.style.left   = `${btn.offsetWidth  / 2 - size / 2}px`;
   ripple.style.top    = `${btn.offsetHeight / 2 - size / 2}px`;
   btn.appendChild(ripple);
   ripple.addEventListener('animationend', () => ripple.remove());
 }
 
-// ── Keyboard shortcut: Space = start/stop ──
+// ═══════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════
+
 document.addEventListener('keydown', e => {
   if (e.code === 'Space' && e.target === document.body) {
     e.preventDefault();
-    if (state.isActive) {
-      stopContraction();
-    } else {
-      startContraction();
-    }
+    state.isActive ? stopContraction() : startContraction();
   }
 });
 
-// ── Init ──
+// ═══════════════════════════════════════
+// RESTORE FROM LOCALSTORAGE
+// ═══════════════════════════════════════
+
+function restoreFromStorage() {
+  loadState();
+
+  const n = state.contractions.length;
+  if (n === 0 && !state.contractionStart) {
+    // Nothing saved — default init state
+    btnStop.disabled = true;
+    return;
+  }
+
+  // Rebuild UI from saved data
+  updateStats();
+  updateCharts();
+  buildLog();
+  updateStatus();
+
+  if (state.contractionStart) {
+    // Was mid-contraction when page closed/refreshed — resume it
+    state.isActive = true;
+    timerCard.classList.add('active');
+    timerLabel.textContent = 'CONTRACTION';
+    timerSub.textContent   = 'Contraction in progress…';
+    btnStart.disabled = true;
+    btnStop.disabled  = false;
+
+    state.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - state.contractionStart) / 1000);
+      timerDisplay.textContent = formatTime(elapsed);
+      if (elapsed >= 60)      timerDisplay.style.color = '#FF1744';
+      else if (elapsed >= 45) timerDisplay.style.color = '#FF6D00';
+      else                    timerDisplay.style.color = '';
+    }, 250);
+
+  } else if (n > 0) {
+    // Between contractions — show rest counter
+    btnStart.disabled = false;
+    btnStop.disabled  = true;
+    startRestCounter();
+  }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+
 btnStop.disabled = true;
+restoreFromStorage();
