@@ -286,7 +286,7 @@ function resetAll() {
   logBody.innerHTML = '<tr class="log-empty"><td colspan="5">No contractions recorded yet</td></tr>';
 
   setStatus('ok', '✓', 'Keep timing — you\'re doing great!');
-  setHospital('ok', 'MONITORING', 'NHS guidance: call your maternity unit when contractions are regular, every 5 min, lasting ≥45s.');
+  setHospital('ok', 'MONITORING', 'Stay home during early labour — rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions are regular, every 5 min, lasting ≥ 45 sec.\n\nCall immediately for: waters breaking · any bleeding · reduced baby movements · or if you are worried.');
 }
 
 // ═══════════════════════════════════════
@@ -424,7 +424,7 @@ function updateStatus() {
 
   if (n === 0) {
     setStatus('ok', '✓', 'Keep timing — you\'re doing great!');
-    setHospital('ok', 'MONITORING', 'NHS guidance: call your maternity unit when contractions are regular, every 5 min, lasting ≥ 45 seconds.');
+    setHospital('ok', 'MONITORING', 'Stay home during early labour — rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions are regular, every 5 min, lasting ≥ 45 sec.\n\nCall immediately for: waters breaking · any bleeding · reduced baby movements · or if you are worried.');
     return;
   }
 
@@ -454,7 +454,7 @@ function updateStatus() {
       ? '1 contraction recorded. Keep timing — call your midwife if you\'re unsure.'
       : `${n} contractions recorded. Keep monitoring — contractions are still irregular or mild.`;
     setStatus('ok', '✓', msg);
-    setHospital('ok', 'MONITORING', 'NHS: stay at home in early labour — rest, eat lightly, stay hydrated.\n\nCall your maternity unit if contractions become every 5 min and last ≥ 45 sec, or if you\'re worried at any time.');
+    setHospital('ok', 'MONITORING', 'Stay home during early labour — rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions are regular, every 5 min, lasting ≥ 45 sec.\n\nCall immediately for: waters breaking · any bleeding · reduced baby movements · or if you are worried.');
   }
 }
 
