@@ -437,7 +437,7 @@ main {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 2rem;
 }
 
 .log-title {
@@ -451,6 +451,7 @@ main {
   padding: 0.4em 1.2em;
   background: var(--yellow);
   border-width: 3px;
+  align-self: flex-start;
 }
 
 .log-table-wrap {
