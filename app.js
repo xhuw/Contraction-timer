@@ -10,6 +10,9 @@ const state = {
   isActive: false,
   timerInterval: null,  // active contraction tick
   restInterval: null,   // rest-between tick
+  // Undo — cleared after use, reset, or page restore
+  lastAction: null,     // 'started' | 'stopped'
+  undoData: null,       // snapshot needed to reverse lastAction
 };
 
 const STORAGE_KEY = 'contraction-timer-v1';
@@ -31,6 +34,8 @@ const hospitalCard = document.getElementById('hospital-card');
 const hospitalTitle= document.getElementById('hospital-title');
 const hospitalRule = document.getElementById('hospital-rule');
 const logBody      = document.getElementById('log-body');
+
+const btnUndo     = document.getElementById('btn-undo');
 
 const statCount   = document.getElementById('stat-count');
 const statAvgDur  = document.getElementById('stat-avg-dur');
@@ -215,6 +220,7 @@ function startContraction() {
   btnStart.disabled = true;
   btnStop.disabled  = false;
 
+  setUndoState('started', { hadPreviousContraction: state.contractions.length > 0 });
   addRipple(btnStart);
 
   state.timerInterval = setInterval(() => {
@@ -256,6 +262,7 @@ function stopContraction() {
   state.contractionStart = null;
 
   saveState();
+  setUndoState('stopped', { contractionStart: contraction.startTime });
 
   timerCard.classList.remove('active');
   timerDisplay.style.color = '';
@@ -286,6 +293,7 @@ function resetAll() {
   state.contractions = [];
   state.contractionStart = null;
   localStorage.removeItem(STORAGE_KEY);
+  clearUndo();
 
   timerCard.classList.remove('active', 'resting');
   timerLabel.textContent   = 'READY';
@@ -526,6 +534,99 @@ function exportCSV() {
 }
 
 // ═══════════════════════════════════════
+// UNDO
+// ═══════════════════════════════════════
+
+function setUndoState(action, data) {
+  state.lastAction = action;
+  state.undoData   = data;
+  btnUndo.disabled = !action;
+}
+
+function clearUndo() {
+  state.lastAction = null;
+  state.undoData   = null;
+  btnUndo.disabled = true;
+}
+
+function undoLast() {
+  if (!state.lastAction) return;
+
+  const action = state.lastAction;
+  const data   = state.undoData;
+  clearUndo();
+
+  if (action === 'started') {
+    // Undo a misclick of START — cancel the live contraction, restore rest
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+    state.isActive = false;
+    state.contractionStart = null;
+    saveState();
+
+    timerDisplay.style.color = '';
+    btnStart.disabled = false;
+    btnStop.disabled  = true;
+
+    if (data.hadPreviousContraction) {
+      startRestCounter();
+    } else {
+      timerCard.classList.remove('active', 'resting');
+      timerLabel.textContent   = 'READY';
+      timerDisplay.textContent = '00:00';
+      timerSub.textContent     = 'Press START to begin a contraction';
+    }
+
+  } else if (action === 'stopped') {
+    // Undo a misclick of STOP — remove last contraction, resume the timer
+    stopRestCounter();
+
+    state.contractions.pop();
+    state.contractionStart = data.contractionStart;
+    state.isActive = true;
+    saveState();
+
+    // Rebuild derived UI
+    if (state.contractions.length > 0) {
+      updateStats();
+      updateCharts();
+    } else {
+      animateStat(statCount,   '0');
+      animateStat(statAvgDur,  '—');
+      animateStat(statAvgFreq, '—');
+      animateStat(statLastDur, '—');
+      durationChart.data.labels = [];
+      durationChart.data.datasets[0].data = [];
+      durationChart.data.datasets[0].backgroundColor = [];
+      durationChart.update();
+      frequencyChart.data.labels = [];
+      frequencyChart.data.datasets[0].data = [];
+      frequencyChart.data.datasets[0].pointBackgroundColor = [];
+      frequencyChart.update();
+    }
+
+    buildLog();
+    updateStatus();
+
+    // Resume contraction timer from original start
+    timerCard.classList.add('active');
+    timerCard.classList.remove('resting');
+    timerLabel.textContent = 'CONTRACTION';
+    timerSub.textContent   = 'Contraction in progress…';
+    btnStart.disabled = true;
+    btnStop.disabled  = false;
+
+    state.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - state.contractionStart) / 1000);
+      timerDisplay.textContent = formatTime(elapsed);
+      if (elapsed >= 60)      timerDisplay.style.color = '#FF1744';
+      else if (elapsed >= 45) timerDisplay.style.color = '#FF6D00';
+      else                    timerDisplay.style.color = '';
+    }, 250);
+  }
+}
+
+// ═══════════════════════════════════════
 // RIPPLE
 // ═══════════════════════════════════════
 
@@ -601,4 +702,5 @@ function restoreFromStorage() {
 // ═══════════════════════════════════════
 
 btnStop.disabled = true;
+btnUndo.disabled = true;
 restoreFromStorage();

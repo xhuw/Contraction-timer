@@ -246,6 +246,7 @@ main {
 
 .btn-start { background: var(--green); }
 .btn-stop  { background: var(--pink);  color: var(--white); }
+.btn-undo  { background: var(--white); font-size: clamp(1rem, 3vw, 1.4rem); }
 .btn-reset { background: var(--cyan); }
 
 /* ── Stats Row ── */
