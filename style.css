@@ -155,7 +155,6 @@ main {
 
 .timer-card.resting .timer-display {
   color: #5573A0;
-  font-size: clamp(4rem, 14vw, 8rem);
 }
 
 .timer-card.resting .timer-sub {
