@@ -437,7 +437,7 @@ main {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .log-title {
