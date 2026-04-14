@@ -275,8 +275,33 @@ function stopContraction() {
 }
 
 // ═══════════════════════════════════════
-// RESET
+// RESET (with confirmation modal)
 // ═══════════════════════════════════════
+
+const resetModal = document.getElementById('reset-modal');
+
+function openResetModal() {
+  resetModal.hidden = false;
+}
+
+function closeResetModal() {
+  resetModal.hidden = true;
+}
+
+// Close on backdrop click
+resetModal.addEventListener('click', e => {
+  if (e.target === resetModal) closeResetModal();
+});
+
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !resetModal.hidden) closeResetModal();
+});
+
+function confirmReset() {
+  closeResetModal();
+  resetAll();
+}
 
 function resetAll() {
   if (state.isActive) {

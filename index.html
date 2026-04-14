@@ -41,7 +41,7 @@
         <button class="btn btn-stop" id="btn-stop" onclick="stopContraction()" disabled>
           STOP
         </button>
-        <button class="btn btn-reset" id="btn-reset" onclick="resetAll()">
+        <button class="btn btn-reset" id="btn-reset" onclick="openResetModal()">
           RESET
         </button>
       </div>
@@ -132,5 +132,18 @@
   </main>
 
   <script src="app.js"></script>
+
+  <!-- RESET CONFIRMATION MODAL -->
+  <div id="reset-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-icon">⚠️</div>
+      <h2 class="modal-title">RESET?</h2>
+      <p class="modal-body">This will delete all contraction data. Are you sure?</p>
+      <div class="modal-btn-row">
+        <button class="btn modal-btn-cancel" onclick="closeResetModal()">CANCEL</button>
+        <button class="btn modal-btn-confirm" onclick="confirmReset()">YES, RESET</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
