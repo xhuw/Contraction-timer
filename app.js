@@ -85,7 +85,26 @@ const frequencyChart = new Chart(frequencyCtx, {
   data: { labels: [], datasets: [{ data: [], backgroundColor: 'rgba(0,207,255,0.25)', borderColor: '#0D0D0D', borderWidth: 3, pointBackgroundColor: [], pointBorderColor: '#0D0D0D', pointBorderWidth: 2, pointRadius: 6, fill: true, tension: 0.4 }] },
   options: {
     ...chartDefaults,
-    scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, title: { display: true, text: 'minutes', font: { family: 'Nunito, sans-serif', weight: '700', size: 11 } } } },
+    plugins: {
+      ...chartDefaults.plugins,
+      tooltip: {
+        ...chartDefaults.plugins.tooltip,
+        callbacks: {
+          label: ctx => ` ${formatMinSec(ctx.parsed.y)}`,
+        },
+      },
+    },
+    scales: {
+      ...chartDefaults.scales,
+      y: {
+        ...chartDefaults.scales.y,
+        title: { display: true, text: 'mm:ss', font: { family: 'Nunito, sans-serif', weight: '700', size: 11 } },
+        ticks: {
+          ...chartDefaults.scales.y.ticks,
+          callback: val => formatMinSec(val),
+        },
+      },
+    },
   },
 });
 
@@ -124,6 +143,14 @@ function formatTime(totalSeconds) {
 
 function formatHHMM(date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// Convert a float number of minutes to "MM:SS"
+function formatMinSec(minutes) {
+  const totalSeconds = Math.round(minutes * 60);
+  const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const s = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
 }
 
 // ═══════════════════════════════════════
@@ -382,14 +409,14 @@ function updateLog(contraction) {
 
 function appendLogRow(contraction, n, animate) {
   const status   = contractionStatus(contraction);
-  const interval = contraction.interval !== null ? contraction.interval.toFixed(1) : '—';
+  const interval = contraction.interval !== null ? formatMinSec(contraction.interval) : '—';
   const row = document.createElement('tr');
   row.className = `log-${status.level}${animate ? ' new-row' : ''}`;
   row.innerHTML = `
     <td>${n}</td>
     <td>${formatHHMM(new Date(contraction.startTime))}</td>
     <td>${contraction.duration}s</td>
-    <td>${interval} min</td>
+    <td>${interval}</td>
     <td><span class="badge badge-${status.level}">${status.label}</span></td>
   `;
   logBody.prepend(row);
@@ -479,10 +506,10 @@ function exportCSV() {
   if (cs.length === 0) return;
 
   const rows = [
-    ['#', 'Start Time', 'Duration (s)', 'Interval (min)', 'Status'],
+    ['#', 'Start Time', 'Duration (s)', 'Interval (mm:ss)', 'Status'],
     ...cs.map((c, i) => {
       const status = contractionStatus(c);
-      const interval = c.interval !== null ? c.interval.toFixed(2) : '';
+      const interval = c.interval !== null ? formatMinSec(c.interval) : '';
       const startTime = new Date(c.startTime).toLocaleString();
       return [i + 1, startTime, c.duration, interval, status.label];
     }),
