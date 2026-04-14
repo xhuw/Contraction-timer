@@ -281,7 +281,12 @@ main {
   box-shadow: 1px 1px 0 var(--black);
 }
 
-.btn-undo-corner[hidden] { display: none; }
+.btn-undo-corner:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 3px 3px 0 var(--black);
+}
 
 /* ── Stats Row ── */
 .stats-row {
