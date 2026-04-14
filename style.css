@@ -675,6 +675,27 @@ main {
   to   { transform: translateX(0);     opacity: 1; }
 }
 
+/* ── Footer ── */
+.app-footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 1rem 1rem 2rem;
+}
+
+.bug-link {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--black);
+  opacity: 0.35;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: 1px;
+  transition: opacity 0.2s;
+}
+
+.bug-link:hover { opacity: 0.75; }
+
 /* ── Ripple ── */
 .ripple {
   position: absolute;
