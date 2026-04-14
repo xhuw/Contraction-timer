@@ -299,21 +299,7 @@ function resetAll() {
   btnStart.disabled = false;
   btnStop.disabled  = true;
 
-  animateStat(statCount,   '0');
-  animateStat(statAvgDur,  '—');
-  animateStat(statAvgFreq, '—');
-  animateStat(statLastDur, '—');
-
-  durationChart.data.labels = [];
-  durationChart.data.datasets[0].data = [];
-  durationChart.data.datasets[0].backgroundColor = [];
-  durationChart.update();
-
-  frequencyChart.data.labels = [];
-  frequencyChart.data.datasets[0].data = [];
-  frequencyChart.data.datasets[0].pointBackgroundColor = [];
-  frequencyChart.update();
-
+  clearStatsAndCharts();
   logBody.innerHTML = '<tr class="log-empty"><td colspan="5">No contractions recorded yet</td></tr>';
 
   setStatus('ok', '✓', 'Keep timing — you\'re doing great!');
@@ -534,46 +520,80 @@ function exportCSV() {
 // ═══════════════════════════════════════
 
 function updateUndoButton() {
-  btnUndo.disabled = state.contractions.length === 0;
+  // Disabled only when there is nothing to undo (ready state, no contractions)
+  btnUndo.disabled = !state.isActive && state.contractions.length === 0;
+}
+
+function clearStatsAndCharts() {
+  animateStat(statCount,   '0');
+  animateStat(statAvgDur,  '—');
+  animateStat(statAvgFreq, '—');
+  animateStat(statLastDur, '—');
+  durationChart.data.labels = [];
+  durationChart.data.datasets[0].data = [];
+  durationChart.data.datasets[0].backgroundColor = [];
+  durationChart.update();
+  frequencyChart.data.labels = [];
+  frequencyChart.data.datasets[0].data = [];
+  frequencyChart.data.datasets[0].pointBackgroundColor = [];
+  frequencyChart.update();
 }
 
 function undoLast() {
-  if (state.contractions.length === 0) return;
+  if (!state.isActive && state.contractions.length === 0) return;
 
-  state.contractions.pop();
-  saveState();
+  if (state.isActive) {
+    // Undo a START: cancel the live contraction, return to rest or ready
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+    state.isActive = false;
+    state.contractionStart = null;
+    saveState();
 
-  // If resting between contractions, update the rest counter
-  if (!state.isActive) {
-    stopRestCounter();
+    timerDisplay.style.color = '';
+    btnStart.disabled = false;
+    btnStop.disabled  = true;
+
     if (state.contractions.length > 0) {
       startRestCounter();
     } else {
-      timerCard.classList.remove('resting');
+      timerCard.classList.remove('active', 'resting');
       timerLabel.textContent   = 'READY';
       timerDisplay.textContent = '00:00';
       timerSub.textContent     = 'Press START to begin a contraction';
     }
+
+  } else {
+    // Undo a STOP: remove last contraction, resume its timer from original start
+    const last = state.contractions.pop();
+    state.contractionStart = last.startTime;
+    state.isActive = true;
+    saveState();
+
+    stopRestCounter();
+
+    timerCard.classList.add('active');
+    timerCard.classList.remove('resting');
+    timerLabel.textContent = 'CONTRACTION';
+    timerSub.textContent   = 'Contraction in progress…';
+    btnStart.disabled = true;
+    btnStop.disabled  = false;
+
+    state.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - state.contractionStart) / 1000);
+      timerDisplay.textContent = formatTime(elapsed);
+      if (elapsed >= 60)      timerDisplay.style.color = '#FF1744';
+      else if (elapsed >= 45) timerDisplay.style.color = '#FF6D00';
+      else                    timerDisplay.style.color = '';
+    }, 250);
   }
 
   if (state.contractions.length > 0) {
     updateStats();
     updateCharts();
   } else {
-    animateStat(statCount,   '0');
-    animateStat(statAvgDur,  '—');
-    animateStat(statAvgFreq, '—');
-    animateStat(statLastDur, '—');
-    durationChart.data.labels = [];
-    durationChart.data.datasets[0].data = [];
-    durationChart.data.datasets[0].backgroundColor = [];
-    durationChart.update();
-    frequencyChart.data.labels = [];
-    frequencyChart.data.datasets[0].data = [];
-    frequencyChart.data.datasets[0].pointBackgroundColor = [];
-    frequencyChart.update();
+    clearStatsAndCharts();
   }
-
   buildLog();
   updateStatus();
   updateUndoButton();
