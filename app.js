@@ -540,13 +540,13 @@ function exportCSV() {
 function setUndoState(action, data) {
   state.lastAction = action;
   state.undoData   = data;
-  btnUndo.disabled = !action;
+  btnUndo.hidden = false;
 }
 
 function clearUndo() {
   state.lastAction = null;
   state.undoData   = null;
-  btnUndo.disabled = true;
+  btnUndo.hidden = true;
 }
 
 function undoLast() {
@@ -702,5 +702,4 @@ function restoreFromStorage() {
 // ═══════════════════════════════════════
 
 btnStop.disabled = true;
-btnUndo.disabled = true;
 restoreFromStorage();

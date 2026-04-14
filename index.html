@@ -30,15 +30,16 @@
         <div class="timer-sub" id="timer-sub">Press START to begin a contraction</div>
       </div>
 
+      <button class="btn-undo-corner" id="btn-undo" onclick="undoLast()" title="Undo last action" aria-label="Undo" hidden>
+        ↩
+      </button>
+
       <div class="btn-row">
         <button class="btn btn-start" id="btn-start" onclick="startContraction()">
           START
         </button>
         <button class="btn btn-stop" id="btn-stop" onclick="stopContraction()" disabled>
           STOP
-        </button>
-        <button class="btn btn-undo" id="btn-undo" onclick="undoLast()" disabled>
-          UNDO
         </button>
         <button class="btn btn-reset" id="btn-reset" onclick="resetAll()">
           RESET
