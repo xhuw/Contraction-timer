@@ -411,6 +411,25 @@ main {
   color: var(--white);
 }
 
+.nhs-link {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--black);
+  opacity: 0.5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.nhs-link:hover { opacity: 1; }
+
+.hospital-card.warn .nhs-link,
+.hospital-card.danger .nhs-link {
+  color: var(--white);
+}
+
 /* ── Log Table ── */
 .log-section { }
 
