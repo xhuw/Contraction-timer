@@ -471,6 +471,34 @@ function setHospital(level, title, rule) {
 }
 
 // ═══════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════
+
+function exportCSV() {
+  const cs = state.contractions;
+  if (cs.length === 0) return;
+
+  const rows = [
+    ['#', 'Start Time', 'Duration (s)', 'Interval (min)', 'Status'],
+    ...cs.map((c, i) => {
+      const status = contractionStatus(c);
+      const interval = c.interval !== null ? c.interval.toFixed(2) : '';
+      const startTime = new Date(c.startTime).toLocaleString();
+      return [i + 1, startTime, c.duration, interval, status.label];
+    }),
+  ];
+
+  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `contractions-${new Date().toISOString().slice(0, 16).replace('T', '_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════
 // RIPPLE
 // ═══════════════════════════════════════
 

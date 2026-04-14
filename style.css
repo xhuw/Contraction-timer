@@ -431,13 +431,26 @@ main {
 }
 
 /* ── Log Table ── */
-.log-section { }
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
 
 .log-title {
   font-family: 'Anton', sans-serif;
   font-size: 1.4rem;
   letter-spacing: 3px;
-  margin-bottom: 0.75rem;
+}
+
+.btn-export {
+  font-size: 0.95rem;
+  padding: 0.4em 1.2em;
+  background: var(--yellow);
+  border-width: 3px;
 }
 
 .log-table-wrap {
