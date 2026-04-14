@@ -144,7 +144,9 @@ function formatTime(totalSeconds) {
 }
 
 function formatHHMM(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const hhmm = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const ss   = date.toLocaleTimeString([], { second: '2-digit' }).replace(/.*:/, ':');
+  return `${hhmm}<span class="log-time-sec">${ss}</span>`;
 }
 
 // Convert a float number of minutes to "MM:SS"
@@ -525,7 +527,7 @@ function exportCSV() {
     ...cs.map((c, i) => {
       const status = contractionStatus(c);
       const interval = c.interval !== null ? formatMinSec(c.interval) : '';
-      const startTime = new Date(c.startTime).toLocaleString();
+      const startTime = new Date(c.startTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' });
       return [i + 1, startTime, c.duration, interval, status.label];
     }),
   ];
