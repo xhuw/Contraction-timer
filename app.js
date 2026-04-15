@@ -115,10 +115,14 @@ const frequencyChart = new Chart(frequencyCtx, {
 // ═══════════════════════════════════════
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    contractions: state.contractions,
-    contractionStart: state.contractionStart,
-  }));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      contractions: state.contractions,
+      contractionStart: state.contractionStart,
+    }));
+  } catch {
+    // Storage unavailable (private browsing / quota exceeded) — app still works without persistence
+  }
 }
 
 function loadState() {
@@ -126,10 +130,23 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const saved = JSON.parse(raw);
-    state.contractions = saved.contractions || [];
-    state.contractionStart = saved.contractionStart || null;
+
+    // Validate each contraction — discard any entry with unexpected/corrupt fields
+    const rawContractions = Array.isArray(saved.contractions) ? saved.contractions : [];
+    state.contractions = rawContractions.filter(c =>
+      typeof c.startTime === 'number' &&
+      typeof c.endTime   === 'number' &&
+      typeof c.duration  === 'number' &&
+      c.duration >= 0 &&
+      c.startTime <= c.endTime &&
+      (c.interval == null || typeof c.interval === 'number')
+    );
+
+    state.contractionStart = (typeof saved.contractionStart === 'number')
+      ? saved.contractionStart
+      : null;
   } catch {
-    // corrupt data — ignore
+    // Corrupt JSON — start fresh
   }
 }
 
@@ -144,8 +161,9 @@ function formatTime(totalSeconds) {
 }
 
 function formatHHMM(date) {
-  const hhmm = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const ss   = date.toLocaleTimeString([], { second: '2-digit' }).replace(/.*:/, ':');
+  // Use explicit locale + getSeconds() to avoid locale-dependent separator/digit issues
+  const hhmm = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const ss   = ':' + String(date.getSeconds()).padStart(2, '0');
   return `${hhmm}<span class="log-time-sec">${ss}</span>`;
 }
 
@@ -174,7 +192,7 @@ function startRestCounter() {
   timerLabel.textContent = 'REST';
 
   function tick() {
-    const elapsed = Math.floor((Date.now() - lastEnd) / 1000);
+    const elapsed = Math.max(0, Math.floor((Date.now() - lastEnd) / 1000));
     timerDisplay.textContent = formatTime(elapsed);
     timerDisplay.style.color = '';
 
@@ -222,7 +240,7 @@ function startContraction() {
   addRipple(btnStart);
 
   state.timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - state.contractionStart) / 1000);
+    const elapsed = Math.max(0, Math.floor((Date.now() - state.contractionStart) / 1000));
     timerDisplay.textContent = formatTime(elapsed);
 
     if (elapsed >= 60) {
@@ -340,6 +358,7 @@ function resetAll() {
 function updateStats() {
   const cs = state.contractions;
   const n  = cs.length;
+  if (n === 0) return;  // guard — should not be called with empty array
 
   animateStat(statCount, String(n));
   animateStat(statLastDur, String(cs[n - 1].duration));
@@ -347,10 +366,13 @@ function updateStats() {
   const avgDur = Math.round(cs.reduce((s, c) => s + c.duration, 0) / n);
   animateStat(statAvgDur, String(avgDur));
 
-  const intervals = cs.filter(c => c.interval !== null).map(c => c.interval);
+  // Use loose != to catch both null and undefined interval values
+  const intervals = cs.filter(c => c.interval != null).map(c => c.interval);
   if (intervals.length > 0) {
     const avgFreq = (intervals.reduce((s, v) => s + v, 0) / intervals.length).toFixed(1);
     animateStat(statAvgFreq, String(avgFreq));
+  } else {
+    animateStat(statAvgFreq, '—');
   }
 }
 
@@ -454,12 +476,13 @@ function contractionStatus(c) {
 // NHS HOSPITAL GUIDANCE
 // Based on: nhs.uk/pregnancy/labour-and-birth
 //
-// STAY HOME  — irregular, >10 min apart, <45s
-// CALL UNIT  — regular pattern forming, 5–10 min apart, or ≥45s duration
-// GO NOW     — every ≤5 min, lasting ≥45s, consistently (3+ contractions)
+// STAY HOME  — irregular, >10 min apart, or <30s with few contractions
+// CALL UNIT  — 5–10 min apart OR lasting ≥45s with ≥2 contractions
+// GO NOW     — every ≤5 min, lasting ≥45s, 3+ contractions
+//              OR very frequent (≤3 min apart) with 3+ contractions
 //
-// Always call immediately for: waters breaking, heavy bleeding,
-// reduced baby movements, or if you are worried at any point.
+// Always call immediately: waters breaking, heavy bleeding,
+// reduced baby movements, or if worried at any point.
 // ═══════════════════════════════════════
 
 function updateStatus() {
@@ -475,16 +498,23 @@ function updateStatus() {
   // Assess the most recent contractions (up to last 6)
   const recent    = cs.slice(-6);
   const avgDur    = recent.reduce((s, c) => s + c.duration, 0) / recent.length;
-  const intervals = recent.filter(c => c.interval !== null).map(c => c.interval);
+  // Use loose != to catch both null and undefined
+  const intervals = recent.filter(c => c.interval != null).map(c => c.interval);
   const avgFreq   = intervals.length ? intervals.reduce((s, v) => s + v, 0) / intervals.length : Infinity;
   const lastFreq  = intervals.length ? intervals[intervals.length - 1] : Infinity;
 
-  // NHS: go to hospital — contractions every 5 min, lasting ≥45s, established pattern (3+)
-  const goNow = n >= 3 && avgFreq <= 5 && avgDur >= 45;
+  // GO NOW:
+  //   • NHS 5-1-1: ≥3 contractions every ≤5 min, lasting ≥45s
+  //   • Very frequent (≤3 min apart) with ≥3 contractions — potential emergency regardless of duration
+  const goNow = (n >= 3 && avgFreq <= 5 && avgDur >= 45)
+             || (n >= 3 && avgFreq <= 3);
 
-  // NHS: call maternity unit — contractions getting regular (5–10 min) or lasting ≥45s
-  const callUnit = (avgFreq <= 10 && avgFreq > 5 && avgDur >= 30)
-                || (avgDur >= 45)
+  // CALL MIDWIFE:
+  //   • Contractions 5–10 min apart with some duration (≥2 recorded)
+  //   • Contractions lasting ≥45s consistently (≥2 recorded) — note: requires ≥2 to avoid single-contraction false alarm
+  //   • Most recent interval already ≤5 min with ≥2 contractions (pattern forming quickly)
+  const callUnit = (avgFreq <= 10 && avgFreq > 5 && avgDur >= 30 && n >= 2)
+                || (avgDur >= 45 && n >= 2)
                 || (lastFreq <= 5 && n >= 2);
 
   if (goNow) {
@@ -523,7 +553,7 @@ function exportCSV() {
   if (cs.length === 0) return;
 
   const rows = [
-    ['#', 'Start Time', 'Duration (s)', 'Interval (mm:ss)', 'Status'],
+    ['#', 'Start Time', 'Duration (s)', 'Gap start->start (mm:ss)', 'Status'],
     ...cs.map((c, i) => {
       const status = contractionStatus(c);
       const interval = c.interval !== null ? formatMinSec(c.interval) : '';
@@ -538,8 +568,11 @@ function exportCSV() {
   const a    = document.createElement('a');
   a.href     = url;
   a.download = `contractions-${new Date().toISOString().slice(0, 16).replace('T', '_')}.csv`;
+  // Append to DOM required for Safari; defer revoke so browser has time to start the download
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
 // ═══════════════════════════════════════
@@ -607,7 +640,7 @@ function undoLast() {
     btnStop.disabled  = false;
 
     state.timerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - state.contractionStart) / 1000);
+      const elapsed = Math.max(0, Math.floor((Date.now() - state.contractionStart) / 1000));
       timerDisplay.textContent = formatTime(elapsed);
       if (elapsed >= 60)      timerDisplay.style.color = '#FF1744';
       else if (elapsed >= 45) timerDisplay.style.color = '#FF6D00';
@@ -659,6 +692,15 @@ document.addEventListener('keydown', e => {
 function restoreFromStorage() {
   loadState();
 
+  // Discard a contractionStart that is more than 5 minutes old — the app was
+  // likely closed mid-contraction. Resuming a 3-hour-old "active" contraction
+  // would produce a garbage duration that corrupts guidance calculations.
+  const STALE_MS = 5 * 60 * 1000;
+  if (state.contractionStart && (Date.now() - state.contractionStart) > STALE_MS) {
+    state.contractionStart = null;
+    saveState();
+  }
+
   const n = state.contractions.length;
   updateUndoButton();
 
@@ -668,10 +710,12 @@ function restoreFromStorage() {
     return;
   }
 
-  // Rebuild UI from saved data
-  updateStats();
-  updateCharts();
-  buildLog();
+  // Rebuild UI from saved data (guard updateStats against empty array)
+  if (n > 0) {
+    updateStats();
+    updateCharts();
+    buildLog();
+  }
   updateStatus();
 
   if (state.contractionStart) {
@@ -684,7 +728,7 @@ function restoreFromStorage() {
     btnStop.disabled  = false;
 
     state.timerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - state.contractionStart) / 1000);
+      const elapsed = Math.max(0, Math.floor((Date.now() - state.contractionStart) / 1000));
       timerDisplay.textContent = formatTime(elapsed);
       if (elapsed >= 60)      timerDisplay.style.color = '#FF1744';
       else if (elapsed >= 45) timerDisplay.style.color = '#FF6D00';
