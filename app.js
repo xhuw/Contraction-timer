@@ -589,9 +589,14 @@ function exportCSV() {
 // ═══════════════════════════════════════
 
 function encodeShareState() {
+  const cs = state.contractions;
+  const t0 = cs.length > 0 ? cs[0].startTime : (state.contractionStart || Date.now());
   const payload = {
-    c: state.contractions.map(c => ({ s: c.startTime, e: c.endTime, d: c.duration, i: c.interval })),
-    cs: state.contractionStart,
+    t: t0,
+    c: cs.map(c => [Math.round((c.startTime - t0) / 1000), c.duration]),
+    cs: state.contractionStart !== null
+      ? Math.round((state.contractionStart - t0) / 1000)
+      : null,
   };
   return btoa(JSON.stringify(payload))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -604,13 +609,23 @@ function restoreFromUrl() {
     const b64 = hash.slice(7).replace(/-/g, '+').replace(/_/g, '/');
     const padding = b64.length % 4 ? '='.repeat(4 - b64.length % 4) : '';
     const parsed = JSON.parse(atob(b64 + padding));
-    const raw = Array.isArray(parsed.c) ? parsed.c : [];
-    state.contractions = raw.filter(c =>
-      typeof c.s === 'number' && typeof c.e === 'number' &&
-      typeof c.d === 'number' && c.d >= 0 && c.s <= c.e &&
-      (c.i == null || typeof c.i === 'number')
-    ).map(c => ({ startTime: c.s, endTime: c.e, duration: c.d, interval: c.i ?? null }));
-    state.contractionStart = typeof parsed.cs === 'number' ? parsed.cs : null;
+    if (typeof parsed.t !== 'number' || parsed.t <= 0) return false;
+    const t0 = parsed.t;
+    const rawPairs = Array.isArray(parsed.c) ? parsed.c : [];
+    const validPairs = rawPairs.filter(p =>
+      Array.isArray(p) && p.length >= 2 &&
+      typeof p[0] === 'number' && typeof p[1] === 'number' &&
+      p[0] >= 0 && p[1] >= 0
+    );
+    state.contractions = validPairs.map(([ds, dur], i) => ({
+      startTime: t0 + ds * 1000,
+      endTime:   t0 + ds * 1000 + dur * 1000,
+      duration:  dur,
+      interval:  i > 0 ? (ds - validPairs[i - 1][0]) / 60 : null,
+    }));
+    state.contractionStart = typeof parsed.cs === 'number'
+      ? t0 + parsed.cs * 1000
+      : null;
     saveState();
     history.replaceState(null, '', window.location.pathname + window.location.search);
     return true;
