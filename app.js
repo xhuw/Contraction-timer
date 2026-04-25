@@ -625,10 +625,19 @@ function openShareModal() {
   const encoded = encodeShareState();
   const url = window.location.origin + window.location.pathname + '#state=' + encoded;
   shareUrlInput.value = url;
+  document.getElementById('share-via-wrap').hidden = !navigator.share;
   shareModal.hidden = false;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).catch(() => {});
   }
+}
+
+function shareViaApp() {
+  navigator.share({
+    title: 'Contraction Timer Session',
+    text: 'Track my contractions — tap to resume the session',
+    url: shareUrlInput.value,
+  }).catch(() => {});
 }
 
 function closeShareModal() {

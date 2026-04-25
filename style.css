@@ -648,6 +648,7 @@ main {
 .modal-btn-cancel     { background: var(--cyan); flex: 1; }
 .modal-btn-confirm    { background: var(--red); color: var(--white); flex: 1; }
 .modal-btn-share-copy { background: var(--green); flex: 1; }
+.modal-btn-share-via  { background: var(--pink); color: var(--white); width: 100%; margin-bottom: 0.75rem; }
 
 .share-input {
   display: block;

@@ -158,6 +158,9 @@
       <h2 class="modal-title">SHARE</h2>
       <p class="modal-body">Anyone with this link can resume your session on another device.</p>
       <input class="share-input" id="share-url-input" type="text" readonly>
+      <div id="share-via-wrap" hidden>
+        <button class="btn modal-btn-share-via" onclick="shareViaApp()">SHARE VIA...</button>
+      </div>
       <div class="modal-btn-row">
         <button class="btn modal-btn-cancel" onclick="closeShareModal()">CLOSE</button>
         <button class="btn modal-btn-share-copy" id="btn-copy-link" onclick="copyShareLink()">COPY LINK</button>
