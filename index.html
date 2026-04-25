@@ -110,7 +110,10 @@
     <section class="log-section">
       <div class="log-header">
         <h2 class="log-title">CONTRACTION LOG</h2>
-        <button class="btn btn-export" id="btn-export" onclick="exportCSV()">EXPORT CSV</button>
+        <div class="log-actions">
+          <button class="btn btn-share" id="btn-share" onclick="openShareModal()" disabled>SHARE</button>
+          <button class="btn btn-export" id="btn-export" onclick="exportCSV()">EXPORT CSV</button>
+        </div>
       </div>
       <div class="log-table-wrap">
         <table class="log-table">
@@ -144,6 +147,20 @@
       <div class="modal-btn-row">
         <button class="btn modal-btn-cancel" onclick="closeResetModal()">CANCEL</button>
         <button class="btn modal-btn-confirm" onclick="confirmReset()">YES, RESET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARE LINK MODAL -->
+  <div id="share-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-icon">🔗</div>
+      <h2 class="modal-title">SHARE</h2>
+      <p class="modal-body">Anyone with this link can resume your session on another device.</p>
+      <input class="share-input" id="share-url-input" type="text" readonly>
+      <div class="modal-btn-row">
+        <button class="btn modal-btn-cancel" onclick="closeShareModal()">CLOSE</button>
+        <button class="btn modal-btn-share-copy" id="btn-copy-link" onclick="copyShareLink()">COPY LINK</button>
       </div>
     </div>
   </div>

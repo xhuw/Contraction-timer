@@ -33,6 +33,9 @@ const hospitalRule = document.getElementById('hospital-rule');
 const logBody      = document.getElementById('log-body');
 
 const btnUndo     = document.getElementById('btn-undo');
+const btnShare    = document.getElementById('btn-share');
+const shareModal  = document.getElementById('share-modal');
+const shareUrlInput = document.getElementById('share-url-input');
 
 const statCount   = document.getElementById('stat-count');
 const statAvgDur  = document.getElementById('stat-avg-dur');
@@ -229,6 +232,7 @@ function startContraction() {
   state.contractionStart = Date.now();
 
   saveState();
+  updateShareButton();
 
   timerCard.classList.add('active');
   timerLabel.textContent = 'CONTRACTION';
@@ -279,6 +283,7 @@ function stopContraction() {
 
   saveState();
   updateUndoButton();
+  updateShareButton();
 
   timerCard.classList.remove('active');
   timerDisplay.style.color = '';
@@ -315,7 +320,10 @@ resetModal.addEventListener('click', e => {
 
 // Close on Escape
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !resetModal.hidden) closeResetModal();
+  if (e.key === 'Escape') {
+    if (!resetModal.hidden) closeResetModal();
+    if (!shareModal.hidden) closeShareModal();
+  }
 });
 
 function confirmReset() {
@@ -335,6 +343,7 @@ function resetAll() {
   state.contractionStart = null;
   localStorage.removeItem(STORAGE_KEY);
   updateUndoButton();
+  updateShareButton();
 
   timerCard.classList.remove('active', 'resting');
   timerLabel.textContent   = 'READY';
@@ -576,6 +585,74 @@ function exportCSV() {
 }
 
 // ═══════════════════════════════════════
+// SHARE LINK
+// ═══════════════════════════════════════
+
+function encodeShareState() {
+  const payload = {
+    c: state.contractions.map(c => ({ s: c.startTime, e: c.endTime, d: c.duration, i: c.interval })),
+    cs: state.contractionStart,
+  };
+  return btoa(JSON.stringify(payload))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function restoreFromUrl() {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#state=')) return false;
+  try {
+    const b64 = hash.slice(7).replace(/-/g, '+').replace(/_/g, '/');
+    const padding = b64.length % 4 ? '='.repeat(4 - b64.length % 4) : '';
+    const parsed = JSON.parse(atob(b64 + padding));
+    const raw = Array.isArray(parsed.c) ? parsed.c : [];
+    state.contractions = raw.filter(c =>
+      typeof c.s === 'number' && typeof c.e === 'number' &&
+      typeof c.d === 'number' && c.d >= 0 && c.s <= c.e &&
+      (c.i == null || typeof c.i === 'number')
+    ).map(c => ({ startTime: c.s, endTime: c.e, duration: c.d, interval: c.i ?? null }));
+    state.contractionStart = typeof parsed.cs === 'number' ? parsed.cs : null;
+    saveState();
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    return true;
+  } catch { return false; }
+}
+
+function updateShareButton() {
+  btnShare.disabled = state.contractions.length === 0 && !state.isActive;
+}
+
+function openShareModal() {
+  const encoded = encodeShareState();
+  const url = window.location.origin + window.location.pathname + '#state=' + encoded;
+  shareUrlInput.value = url;
+  shareModal.hidden = false;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).catch(() => {});
+  }
+}
+
+function closeShareModal() {
+  shareModal.hidden = true;
+}
+
+function copyShareLink() {
+  const url = shareUrlInput.value;
+  const btn = document.getElementById('btn-copy-link');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      btn.textContent = 'COPIED!';
+      setTimeout(() => { btn.textContent = 'COPY LINK'; }, 2000);
+    }).catch(() => { shareUrlInput.select(); });
+  } else {
+    shareUrlInput.select();
+  }
+}
+
+shareModal.addEventListener('click', e => {
+  if (e.target === shareModal) closeShareModal();
+});
+
+// ═══════════════════════════════════════
 // UNDO
 // ═══════════════════════════════════════
 
@@ -657,6 +734,7 @@ function undoLast() {
   buildLog();
   updateStatus();
   updateUndoButton();
+  updateShareButton();
 }
 
 // ═══════════════════════════════════════
@@ -686,12 +764,10 @@ document.addEventListener('keydown', e => {
 });
 
 // ═══════════════════════════════════════
-// RESTORE FROM LOCALSTORAGE
+// RESTORE FROM LOCALSTORAGE / URL
 // ═══════════════════════════════════════
 
-function restoreFromStorage() {
-  loadState();
-
+function applyStateToUI() {
   // Discard a contractionStart that is more than 5 minutes old — the app was
   // likely closed mid-contraction. Resuming a 3-hour-old "active" contraction
   // would produce a garbage duration that corrupts guidance calculations.
@@ -703,6 +779,7 @@ function restoreFromStorage() {
 
   const n = state.contractions.length;
   updateUndoButton();
+  updateShareButton();
 
   if (n === 0 && !state.contractionStart) {
     // Nothing saved — default init state
@@ -743,9 +820,18 @@ function restoreFromStorage() {
   }
 }
 
+function restoreFromStorage() {
+  loadState();
+  applyStateToUI();
+}
+
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
 
 btnStop.disabled = true;
-restoreFromStorage();
+if (!restoreFromUrl()) {
+  restoreFromStorage();
+} else {
+  applyStateToUI();
+}
