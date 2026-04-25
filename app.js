@@ -618,7 +618,7 @@ function restoreFromUrl() {
 }
 
 function updateShareButton() {
-  btnShare.disabled = state.contractions.length === 0 && !state.isActive;
+  btnShare.disabled = state.contractions.length === 0 && !state.isActive && !state.contractionStart;
 }
 
 function openShareModal() {
@@ -642,6 +642,8 @@ function shareViaApp() {
 
 function closeShareModal() {
   shareModal.hidden = true;
+  const btn = document.getElementById('btn-copy-link');
+  if (btn) btn.textContent = 'COPY LINK';
 }
 
 function copyShareLink() {
