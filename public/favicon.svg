@@ -1,8 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <!-- Yellow background with rounded corners -->
-  <rect width="512" height="512" fill="#FFE600" rx="96"/>
-
-  <!-- "CT" — pink offset shadow (larger offset) -->
+  <!-- "CT" — pink offset shadow -->
   <text x="280" y="386" font-family="Impact, 'Arial Black', Arial, sans-serif" font-size="340" font-weight="900" fill="#FF2D78" text-anchor="middle" letter-spacing="-8">CT</text>
   <!-- "CT" — black fill on top -->
   <text x="250" y="360" font-family="Impact, 'Arial Black', Arial, sans-serif" font-size="340" font-weight="900" fill="#0D0D0D" text-anchor="middle" letter-spacing="-8">CT</text>
