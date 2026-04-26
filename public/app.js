@@ -482,17 +482,17 @@ function contractionStatus(c) {
 }
 
 // ═══════════════════════════════════════
-// NHS HOSPITAL GUIDANCE
-// Based on: nhs.uk/pregnancy/labour-and-birth
-//
-// STAY HOME  — irregular, >10 min apart, or <30s with few contractions
-// CALL UNIT  — 5–10 min apart OR lasting ≥45s with ≥2 contractions
-// GO NOW     — every ≤5 min, lasting ≥45s, 3+ contractions
-//              OR very frequent (≤3 min apart) with 3+ contractions
-//
-// Always call immediately: waters breaking, heavy bleeding,
-// reduced baby movements, or if worried at any point.
+// HOSPITAL GUIDANCE
+// NHS urgent triggers (from nhs.uk/pregnancy/labour-and-birth/signs-that-labour-has-begun):
+//   • any contraction lasts > 2 minutes
+//   • 6 or more contractions in 10 minutes
+//   • waters break · any vaginal bleeding · baby moving less · < 37 weeks pregnant
+//   • call 999 if baby is coming or strong urge to push
+// App pattern detection (heuristic, not NHS): tier transitions on
+// 5/10-min frequency bands and 45/60s duration bands.
 // ═══════════════════════════════════════
+
+const MONITORING_COPY = 'Early labour can take hours or days — stay home, rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions come every 5 minutes or more often.\n\nCall urgently for: waters breaking · any vaginal bleeding · baby moving less than usual · less than 37 weeks pregnant · or any worry.';
 
 function updateStatus() {
   const cs = state.contractions;
@@ -500,44 +500,50 @@ function updateStatus() {
 
   if (n === 0) {
     setStatus('ok', '✓', 'Keep timing — you\'re doing great!');
-    setHospital('ok', 'MONITORING', 'Stay home during early labour — rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions are regular, every 5 min, lasting ≥ 45 sec.\n\nCall immediately for: waters breaking · any bleeding · reduced baby movements · or if you are worried.');
+    setHospital('ok', 'MONITORING', MONITORING_COPY);
     return;
   }
 
-  // Assess the most recent contractions (up to last 6)
   const recent    = cs.slice(-6);
   const avgDur    = recent.reduce((s, c) => s + c.duration, 0) / recent.length;
-  // Use loose != to catch both null and undefined
   const intervals = recent.filter(c => c.interval != null).map(c => c.interval);
   const avgFreq   = intervals.length ? intervals.reduce((s, v) => s + v, 0) / intervals.length : Infinity;
   const lastFreq  = intervals.length ? intervals[intervals.length - 1] : Infinity;
 
-  // GO NOW:
-  //   • NHS 5-1-1: ≥3 contractions every ≤5 min, lasting ≥45s
-  //   • Very frequent (≤3 min apart) with ≥3 contractions — potential emergency regardless of duration
-  const goNow = (n >= 3 && avgFreq <= 5 && avgDur >= 45)
+  // NHS urgent escalations
+  const tenMinAgo    = Date.now() - 10 * 60 * 1000;
+  const anyOver2Min  = recent.some(c => c.duration >= 120);
+  const sixInTenMin  = cs.filter(c => c.startTime >= tenMinAgo).length >= 6;
+
+  const goNow = anyOver2Min
+             || sixInTenMin
+             || (n >= 3 && avgFreq <= 5 && avgDur >= 45)
              || (n >= 3 && avgFreq <= 3);
 
-  // CALL MIDWIFE:
-  //   • Contractions 5–10 min apart with some duration (≥2 recorded)
-  //   • Contractions lasting ≥45s consistently (≥2 recorded) — note: requires ≥2 to avoid single-contraction false alarm
-  //   • Most recent interval already ≤5 min with ≥2 contractions (pattern forming quickly)
   const callUnit = (avgFreq <= 10 && avgFreq > 5 && avgDur >= 30 && n >= 2)
                 || (avgDur >= 45 && n >= 2)
                 || (lastFreq <= 5 && n >= 2);
 
   if (goNow) {
-    setStatus('danger', '🚨', 'Go to your maternity unit now — contractions are regular, frequent and strong.');
-    setHospital('danger', 'GO TO HOSPITAL', 'NHS: contractions every ≤ 5 min, lasting ≥ 45 sec. Go to your maternity unit or call 999 if needed.\n\nAlso go immediately if: waters break · heavy bleeding · baby not moving normally.');
+    let banner;
+    if (anyOver2Min) {
+      banner = 'A contraction lasted over 2 minutes — call your maternity unit urgently.';
+    } else if (sixInTenMin) {
+      banner = '6 contractions in 10 minutes — call your maternity unit urgently.';
+    } else {
+      banner = 'Go to your maternity unit now — contractions are regular, frequent and strong.';
+    }
+    setStatus('danger', '🚨', banner);
+    setHospital('danger', 'GO TO HOSPITAL', 'Contractions are frequent and strong — go to your maternity unit.\n\nCall 999 if your baby is coming or you have a strong urge to push.\n\nAlso urgent: waters break · any vaginal bleeding · baby moving less than usual.');
   } else if (callUnit) {
     setStatus('warn', '📞', 'Call your midwife or maternity unit — contractions are establishing.');
-    setHospital('warn', 'CALL YOUR MIDWIFE', 'NHS: contractions are getting regular (every 5–10 min) or lasting ≥ 45 sec — call your maternity unit now.\n\nCall immediately if: waters break · heavy bleeding · baby not moving normally · you\'re worried.');
+    setHospital('warn', 'CALL YOUR MIDWIFE', 'Contractions are coming every 5 minutes or more often — call your maternity unit.\n\nAlso call urgently if: any contraction lasts over 2 minutes · 6+ contractions in 10 minutes · waters break · any vaginal bleeding · baby moving less · less than 37 weeks pregnant.');
   } else {
     const msg = n === 1
       ? '1 contraction recorded. Keep timing — call your midwife if you\'re unsure.'
       : `${n} contractions recorded. Keep monitoring — contractions are still irregular or mild.`;
     setStatus('ok', '✓', msg);
-    setHospital('ok', 'MONITORING', 'Stay home during early labour — rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions are regular, every 5 min, lasting ≥ 45 sec.\n\nCall immediately for: waters breaking · any bleeding · reduced baby movements · or if you are worried.');
+    setHospital('ok', 'MONITORING', MONITORING_COPY);
   }
 }
 

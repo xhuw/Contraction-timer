@@ -26,15 +26,15 @@ A pop-art styled contraction timer web app for tracking labour contractions — 
 - **RESET** prompts a confirmation modal before clearing data
 
 ### NHS hospital guidance
-Three-tier indicator based on [NHS maternity guidance](https://www.nhs.uk/pregnancy/labour-and-birth/signs-that-labour-has-begun/):
+Three-tier indicator informed by [NHS maternity guidance](https://www.nhs.uk/pregnancy/labour-and-birth/signs-that-labour-has-begun/). The NHS-specified triggers the app surfaces directly are:
 
-| Level | Condition | Advice |
-|---|---|---|
-| Monitoring | Irregular or > 10 min apart | Stay home — rest, eat lightly, keep hydrated |
-| Call your midwife | 5–10 min apart or ≥ 45s long | Call your maternity unit now |
-| Go to hospital | ≤ 5 min apart AND ≥ 45s, 3+ contractions | Go to your maternity unit now |
+| Action | NHS trigger |
+|---|---|
+| Call your maternity unit | Regular contractions every 5 minutes or more often |
+| Call urgently | Any contraction over 2 min · 6+ contractions in 10 min · waters break · any vaginal bleeding · baby moving less than usual · less than 37 weeks pregnant · or any worry |
+| Call 999 | Baby is coming or strong urge to push |
 
-Always call immediately for: waters breaking · heavy bleeding · reduced baby movements · or if you are worried at any point.
+The app's frequency bands (≤ 5 / 5–10 / > 10 min) and duration colour cues (≥ 45s / ≥ 60s) are the app's own pattern-detection heuristics — not NHS thresholds.
 
 ### Charts
 - **Duration bar chart** — each contraction coloured green / orange / red by threshold
