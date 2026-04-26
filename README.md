@@ -2,7 +2,7 @@
 
 A pop-art styled contraction timer web app for tracking labour contractions — duration, frequency, and when to head to hospital.
 
-**Live app:** https://xhuw.github.io/Contraction-timer/
+**Live app:** https://contraction-timer.com
 
 ---
 
