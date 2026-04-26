@@ -304,6 +304,7 @@ function stopContraction() {
 // ═══════════════════════════════════════
 
 const resetModal = document.getElementById('reset-modal');
+const helpModal  = document.getElementById('help-modal');
 
 function openResetModal() {
   resetModal.hidden = false;
@@ -313,9 +314,20 @@ function closeResetModal() {
   resetModal.hidden = true;
 }
 
+function openHelpModal() {
+  helpModal.hidden = false;
+}
+
+function closeHelpModal() {
+  helpModal.hidden = true;
+}
+
 // Close on backdrop click
 resetModal.addEventListener('click', e => {
   if (e.target === resetModal) closeResetModal();
+});
+helpModal.addEventListener('click', e => {
+  if (e.target === helpModal) closeHelpModal();
 });
 
 // Close on Escape
@@ -323,6 +335,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (!resetModal.hidden) closeResetModal();
     if (!shareModal.hidden) closeShareModal();
+    if (!helpModal.hidden) closeHelpModal();
   }
 });
 
