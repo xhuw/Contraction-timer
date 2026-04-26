@@ -63,3 +63,9 @@ Always call immediately for: waters breaking · heavy bleeding · reduced baby m
 ## Reporting bugs
 
 [Open an issue on GitHub](https://github.com/xhuw/Contraction-timer/issues/new)
+
+## Support
+
+If this app helped you, consider buying me a coffee:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/huwpercival)

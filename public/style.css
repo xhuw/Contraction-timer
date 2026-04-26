@@ -729,6 +729,27 @@ main {
 
 .bug-link:hover { opacity: 0.75; }
 
+.footer-sep {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--black);
+  opacity: 0.35;
+  margin: 0 0.5rem;
+}
+
+.kofi-link {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #FF5E5B;
+  opacity: 0.85;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: 1px;
+  transition: opacity 0.2s;
+}
+
+.kofi-link:hover { opacity: 1; }
+
 /* ── Ripple ── */
 .ripple {
   position: absolute;
