@@ -548,13 +548,15 @@ function updateStatus() {
 }
 
 function setStatus(level, icon, text) {
-  statusBanner.className = `status-banner status-${level}`;
+  statusBanner.classList.remove('status-ok', 'status-warn', 'status-danger');
+  statusBanner.classList.add(`status-${level}`);
   statusIcon.textContent = icon;
   statusText.textContent = text;
 }
 
 function setHospital(level, title, rule) {
-  hospitalCard.className = `hospital-card${level !== 'ok' ? ' ' + level : ''}`;
+  hospitalCard.classList.remove('warn', 'danger');
+  if (level !== 'ok') hospitalCard.classList.add(level);
   hospitalTitle.textContent = title;
   hospitalRule.textContent  = rule;
 }
