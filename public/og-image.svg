@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="dots" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="9" cy="9" r="1.3" fill="rgba(0,0,0,0.12)"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#FFE600"/>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+
+  <!-- Bold black border (card style) -->
+  <rect x="24" y="24" width="1152" height="582" fill="none" stroke="#0D0D0D" stroke-width="6" rx="16"/>
+
+  <!-- Pink accent bar (top-left) -->
+  <rect x="24" y="24" width="220" height="12" fill="#FF2D78" rx="6"/>
+  <!-- Cyan accent bar (bottom-right) -->
+  <rect x="956" y="594" width="220" height="12" fill="#00CFFF" rx="6"/>
+
+  <!-- "CONTRACTION" — black fill, pink offset shadow -->
+  <text x="606" y="306" font-family="Impact, 'Arial Black', Arial, sans-serif" font-size="148" font-weight="900" fill="#FF2D78" text-anchor="middle" letter-spacing="-2">CONTRACTION</text>
+  <text x="600" y="300" font-family="Impact, 'Arial Black', Arial, sans-serif" font-size="148" font-weight="900" fill="#0D0D0D" text-anchor="middle" letter-spacing="-2">CONTRACTION</text>
+
+  <!-- "TIMER" — pink fill, black offset shadow -->
+  <text x="606" y="456" font-family="Impact, 'Arial Black', Arial, sans-serif" font-size="148" font-weight="900" fill="#0D0D0D" text-anchor="middle" letter-spacing="-2">TIMER</text>
+  <text x="600" y="450" font-family="Impact, 'Arial Black', Arial, sans-serif" font-size="148" font-weight="900" fill="#FF2D78" text-anchor="middle" letter-spacing="-2">TIMER</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="548" font-family="'Arial Black', Arial, sans-serif" font-size="30" font-weight="900" fill="#0D0D0D" text-anchor="middle" letter-spacing="1">Track · Time · Know When To Go</text>
+</svg>
