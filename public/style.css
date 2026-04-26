@@ -702,6 +702,9 @@ main {
   text-align: center;
 }
 
+.modal-card-help .modal-icon  { font-size: 2rem; margin-bottom: 0.2rem; }
+.modal-card-help .modal-title { font-size: 2rem; text-shadow: 3px 3px 0 var(--pink); margin-bottom: 1rem; }
+
 .modal-close {
   position: absolute;
   top: 0.75rem;
