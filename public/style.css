@@ -690,6 +690,11 @@ main {
   text-align: left;
   padding: 2rem 1.75rem 1.75rem;
   position: relative;
+  /* Prevent the card from overflowing the viewport on short screens;
+     the body area scrolls while the GOT IT button stays anchored */
+  max-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-card-help .modal-icon,
@@ -730,7 +735,8 @@ main {
 
 .help-body {
   margin-bottom: 1.5rem;
-  max-height: 60vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 0.25rem;
 }
