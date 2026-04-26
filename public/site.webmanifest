@@ -1,0 +1,14 @@
+{
+  "name": "Contraction Timer",
+  "short_name": "Contractions",
+  "description": "Track your contractions, see patterns in frequency and duration, and know exactly when it's time to head to hospital.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFE600",
+  "theme_color": "#FFE600",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
