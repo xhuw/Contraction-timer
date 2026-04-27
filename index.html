@@ -10,6 +10,8 @@
 <body>
   <div class="halftone-bg"></div>
 
+  <button class="btn-help-corner" id="btn-help" onclick="openHelpModal()" title="How to use" aria-label="How to use this app">?</button>
+
   <header>
     <h1 class="title">CONTRACTION<br><span class="title-accent">TIMER</span></h1>
     <div class="subtitle">Track · Time · Know When To Go</div>
@@ -56,12 +58,12 @@
       <div class="stat-card">
         <div class="stat-label">AVG DURATION</div>
         <div class="stat-value" id="stat-avg-dur">—</div>
-        <div class="stat-unit">seconds</div>
+        <div class="stat-unit">seconds (last 5)</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">AVG FREQUENCY</div>
+        <div class="stat-label">LAST 10 MIN</div>
         <div class="stat-value" id="stat-avg-freq">—</div>
-        <div class="stat-unit">minutes</div>
+        <div class="stat-unit">contractions</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">LAST DURATION</div>
@@ -137,6 +139,53 @@
   <footer class="app-footer">
     <a href="https://github.com/xhuw/Contraction-timer/issues/new" target="_blank" rel="noopener" class="bug-link">Report a bug</a>
   </footer>
+
+  <!-- HELP MODAL -->
+  <div id="help-modal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card-help">
+      <button class="modal-close" onclick="closeHelpModal()" aria-label="Close">×</button>
+      <div class="help-body">
+        <div class="modal-icon">📖</div>
+        <h2 class="modal-title">HOW IT WORKS</h2>
+        <ol class="help-steps">
+          <li>
+            <strong>Start a contraction.</strong>
+            Tap <span class="help-kbd help-kbd-green">START</span> the moment one begins. The timer counts up while it lasts.
+          </li>
+          <li>
+            <strong>Stop when it ends.</strong>
+            Tap <span class="help-kbd help-kbd-pink">STOP</span> as soon as it eases. The duration is logged and a rest timer starts counting until the next one.
+          </li>
+          <li>
+            <strong>Made a mistake?</strong>
+            Use the small <span class="help-kbd help-kbd-white">↩</span> in the corner of the timer to undo the last entry.
+          </li>
+          <li>
+            <strong>Watch the hospital card.</strong>
+            It updates as patterns emerge — green means keep timing, orange means get ready, red means call your midwife or head to hospital. Always follow your local NHS / clinician guidance over the app.
+          </li>
+          <li>
+            <strong>Read your stats.</strong>
+            <em>AVG DURATION</em> shows the average of your last 5 contractions. <em>LAST 10 MIN</em> shows how many contractions you've had in the past 10 minutes — the primary metric used by clinicians (NICHD/ACOG standard). <em>LAST DURATION</em> is the most recent contraction.
+          </li>
+          <li>
+            <strong>Share or export.</strong>
+            <span class="help-kbd help-kbd-cyan">SHARE</span> creates a link to hand the session off to another device. <span class="help-kbd help-kbd-yellow">EXPORT CSV</span> downloads the full log.
+          </li>
+          <li>
+            <strong>Reset when done.</strong>
+            <span class="help-kbd help-kbd-cyan">RESET</span> clears everything — only use it once you've saved or shared what you need.
+          </li>
+        </ol>
+        <p class="help-disclaimer">
+          This tool isn't medical advice. If you're worried at any point, call your midwife or maternity unit.
+        </p>
+      </div>
+      <div class="modal-btn-row">
+        <button class="btn modal-btn-confirm modal-btn-help-ok" onclick="closeHelpModal()">GOT IT</button>
+      </div>
+    </div>
+  </div>
 
   <!-- RESET CONFIRMATION MODAL -->
   <div id="reset-modal" class="modal-overlay" hidden>
