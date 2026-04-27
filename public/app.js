@@ -385,17 +385,17 @@ function updateStats() {
   animateStat(statCount, String(n));
   animateStat(statLastDur, String(cs[n - 1].duration));
 
-  const avgDur = Math.round(cs.reduce((s, c) => s + c.duration, 0) / n);
-  animateStat(statAvgDur, String(avgDur));
+  const cutoff = Date.now() - 30 * 60 * 1000;
+  const recent = cs.filter(c => c.startTime >= cutoff);
 
-  // Use loose != to catch both null and undefined interval values
-  const intervals = cs.filter(c => c.interval != null).map(c => c.interval);
-  if (intervals.length > 0) {
-    const avgFreq = (intervals.reduce((s, v) => s + v, 0) / intervals.length).toFixed(1);
-    animateStat(statAvgFreq, String(avgFreq));
+  if (recent.length > 0) {
+    const avgDur = Math.round(recent.reduce((s, c) => s + c.duration, 0) / recent.length);
+    animateStat(statAvgDur, String(avgDur));
   } else {
-    animateStat(statAvgFreq, '—');
+    animateStat(statAvgDur, '—');
   }
+
+  animateStat(statAvgFreq, String(recent.length));
 }
 
 function animateStat(el, value) {
