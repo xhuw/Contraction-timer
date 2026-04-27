@@ -25,16 +25,35 @@ A pop-art styled contraction timer web app for tracking labour contractions — 
 - Restoring a mid-contraction session resumes the timer from its original start time
 - **RESET** prompts a confirmation modal before clearing data
 
-### NHS hospital guidance
-Three-tier indicator informed by [NHS maternity guidance](https://www.nhs.uk/pregnancy/labour-and-birth/signs-that-labour-has-begun/). The NHS-specified triggers the app surfaces directly are:
+### Statistics
 
-| Action | NHS trigger |
+| Stat | What it shows | Why |
+|---|---|---|
+| AVG DURATION | Average of your last 5 contractions (seconds) | Recent window avoids dilution by early slow contractions |
+| LAST 10 MIN | Contractions in the past 10 minutes | Primary clinical metric — NICHD/ACOG standard (see [Clinical basis](#clinical-basis)) |
+| LAST DURATION | Most recent contraction (seconds) | Instant feedback on progression |
+
+### NHS hospital guidance
+
+Three-tier indicator informed by [NHS maternity guidance](https://www.nhs.uk/pregnancy/labour-and-birth/signs-that-labour-has-begun/) and the NICHD 2008 standardised definitions (see [Clinical basis](#clinical-basis)):
+
+| Action | Trigger |
 |---|---|
-| Call your maternity unit | Regular contractions every 5 minutes or more often |
-| Call urgently | Any contraction over 2 min · 6+ contractions in 10 min · waters break · any vaginal bleeding · baby moving less than usual · less than 37 weeks pregnant · or any worry |
+| Call your maternity unit | Contractions coming every 5 minutes or more often |
+| Call urgently | Any contraction over 2 min · 6+ contractions in 10 min · waters break · any vaginal bleeding · baby moving less · less than 37 weeks pregnant · or any worry |
 | Call 999 | Baby is coming or strong urge to push |
 
-The app's frequency bands (≤ 5 / 5–10 / > 10 min) and duration colour cues (≥ 45s / ≥ 60s) are the app's own pattern-detection heuristics — not NHS thresholds.
+The frequency thresholds follow the NICHD definition of uterine activity: contractions per 10-minute window averaged over 30 minutes. Normal ≤ 5/10 min; tachysystole > 5/10 min.
+
+### Clinical basis
+
+The guidance logic is grounded in peer-reviewed obstetric standards:
+
+- **Macones GA, Hankins GD, Spong CY, Hauth J, Moore T.** (2008). The 2008 National Institute of Child Health and Human Development workshop report on electronic fetal monitoring: update on definitions, interpretation, and research guidelines. *Obstetrics & Gynecology*, 112(3), 661–666. Defines uterine activity as contractions per 10-minute window averaged over 30 minutes; tachysystole threshold > 5/10 min. [PubMed](https://pubmed.ncbi.nlm.nih.gov/18757666/)
+
+- **American College of Obstetricians and Gynecologists (ACOG).** Practice Bulletin No. 116 (2010): Management of Intrapartum Fetal Heart Rate Tracings. Endorses the NICHD 2008 terminology and thresholds.
+
+- **NHS.** [Signs that labour has begun](https://www.nhs.uk/pregnancy/labour-and-birth/signs-that-labour-has-begun/) — patient-facing guidance on when to call the maternity unit.
 
 ### Charts
 - **Duration bar chart** — each contraction coloured green / orange / red by threshold
