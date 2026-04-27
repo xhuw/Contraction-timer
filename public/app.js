@@ -377,11 +377,6 @@ function resetAll() {
 // STATS
 // ═══════════════════════════════════════
 
-function contractionsPer10() {
-  const cutoff = Date.now() - 10 * 60 * 1000;
-  return state.contractions.filter(c => c.startTime >= cutoff).length;
-}
-
 function updateStats() {
   const cs = state.contractions;
   const n  = cs.length;
@@ -390,13 +385,17 @@ function updateStats() {
   animateStat(statCount, String(n));
   animateStat(statLastDur, String(cs[n - 1].duration));
 
-  // Average of the most recent 5 contractions — more reflective of current labour than all-time mean
-  const recentCs = cs.slice(-5);
-  const avgDur = Math.round(recentCs.reduce((s, c) => s + c.duration, 0) / recentCs.length);
+  const avgDur = Math.round(cs.reduce((s, c) => s + c.duration, 0) / n);
   animateStat(statAvgDur, String(avgDur));
 
-  // NICHD primary metric: contractions per 10-minute window
-  animateStat(statAvgFreq, String(contractionsPer10()));
+  // Use loose != to catch both null and undefined interval values
+  const intervals = cs.filter(c => c.interval != null).map(c => c.interval);
+  if (intervals.length > 0) {
+    const avgFreq = (intervals.reduce((s, v) => s + v, 0) / intervals.length).toFixed(1);
+    animateStat(statAvgFreq, String(avgFreq));
+  } else {
+    animateStat(statAvgFreq, '—');
+  }
 }
 
 function animateStat(el, value) {
@@ -518,34 +517,31 @@ function updateStatus() {
     return;
   }
 
-  const now          = Date.now();
-  const tenMinAgo    = now - 10 * 60 * 1000;
-  const thirtyMinAgo = now - 30 * 60 * 1000;
-  const inLast10     = cs.filter(c => c.startTime >= tenMinAgo).length;
-  const inLast30     = cs.filter(c => c.startTime >= thirtyMinAgo).length;
-  const rate30       = inLast30 / 3;  // avg contractions per 10-min window over 30 min (NICHD)
-  const recentDurs   = cs.slice(-5).map(c => c.duration);
-  const avgRecentDur = recentDurs.reduce((a, b) => a + b, 0) / recentDurs.length;
-  const anyOver2Min  = cs.some(c => c.duration >= 120);
+  const recent    = cs.slice(-6);
+  const avgDur    = recent.reduce((s, c) => s + c.duration, 0) / recent.length;
+  const intervals = recent.filter(c => c.interval != null).map(c => c.interval);
+  const avgFreq   = intervals.length ? intervals.reduce((s, v) => s + v, 0) / intervals.length : Infinity;
+  const lastFreq  = intervals.length ? intervals[intervals.length - 1] : Infinity;
 
-  // Urgent: NHS triggers + NICHD tachysystole threshold (>5/10 min over 30 min)
+  // NHS urgent escalations
+  const tenMinAgo    = Date.now() - 10 * 60 * 1000;
+  const anyOver2Min  = recent.some(c => c.duration >= 120);
+  const sixInTenMin  = cs.filter(c => c.startTime >= tenMinAgo).length >= 6;
+
   const goNow = anyOver2Min
-             || inLast10 >= 6
-             || (rate30 > 5 && n >= 3);
+             || sixInTenMin
+             || (n >= 3 && avgFreq <= 5 && avgDur >= 45)
+             || (n >= 3 && avgFreq <= 3);
 
-  // Call midwife: ≥4 in last 10 min, or rate trending toward tachysystole with long durations,
-  // or consistently long contractions
-  const callUnit = !goNow && (
-    inLast10 >= 4
-    || (rate30 >= 4 && avgRecentDur >= 45 && n >= 2)
-    || (avgRecentDur >= 60 && n >= 2)
-  );
+  const callUnit = (avgFreq <= 10 && avgFreq > 5 && avgDur >= 30 && n >= 2)
+                || (avgDur >= 45 && n >= 2)
+                || (lastFreq <= 5 && n >= 2);
 
   if (goNow) {
     let banner;
     if (anyOver2Min) {
       banner = 'A contraction lasted over 2 minutes — call your maternity unit urgently.';
-    } else if (inLast10 >= 6) {
+    } else if (sixInTenMin) {
       banner = '6 contractions in 10 minutes — call your maternity unit urgently.';
     } else {
       banner = 'Go to your maternity unit now — contractions are regular, frequent and strong.';
