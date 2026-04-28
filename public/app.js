@@ -502,7 +502,7 @@ function contractionStatus(c) {
 //   • waters break · any vaginal bleeding · baby moving less · < 37 weeks pregnant
 //   • call 999 if baby is coming or strong urge to push
 // App pattern detection (heuristic, not NHS): tier transitions on
-// 5/10-min frequency bands and 45/60s duration bands.
+// NHS thresholds: call unit at every-5-min/45 s; go now at every-3-min/60 s or tachysystole/hypertonus.
 // ═══════════════════════════════════════
 
 const MONITORING_COPY = 'Early labour can take hours or days — stay home, rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions come every 5 minutes or more often.\n\nCall urgently for: waters breaking · any vaginal bleeding · baby moving less than usual · less than 37 weeks pregnant · or any worry.';
@@ -528,14 +528,16 @@ function updateStatus() {
   const anyOver2Min  = recent.some(c => c.duration >= 120);
   const sixInTenMin  = cs.filter(c => c.startTime >= tenMinAgo).length >= 6;
 
+  // NHS emergency: hypertonus (>2 min), tachysystole (≥6 in 10 min), or
+  // well-established rapid labour (every 3 min, 60 s) — go straight to hospital.
   const goNow = anyOver2Min
              || sixInTenMin
-             || (n >= 3 && avgFreq <= 5 && avgDur >= 45)
-             || (n >= 3 && avgFreq <= 3);
+             || (n >= 3 && avgFreq <= 3 && avgDur >= 60);
 
-  const callUnit = (avgFreq <= 10 && avgFreq > 5 && avgDur >= 30 && n >= 2)
-                || (avgDur >= 45 && n >= 2)
-                || (lastFreq <= 5 && n >= 2);
+  // NHS call unit: every 5 min with 45 s+ duration (subsequent baby threshold;
+  // also catches first-baby pattern which is stricter at every 3 min / 60 s).
+  const callUnit = (n >= 3 && avgFreq <= 5 && avgDur >= 45)
+                || (n >= 2 && lastFreq <= 5 && avgDur >= 45);
 
   if (goNow) {
     let banner;
