@@ -502,7 +502,7 @@ function contractionStatus(c) {
 //   • waters break · any vaginal bleeding · baby moving less · < 37 weeks pregnant
 //   • call 999 if baby is coming or strong urge to push
 // App pattern detection (heuristic, not NHS): tier transitions on
-// NHS thresholds: call unit at every-5-min/45 s; go now at every-3-min/60 s or tachysystole/hypertonus.
+// NHS thresholds: call unit when avg or last interval < 5 min; go now on 6-in-10-min or contraction > 2 min.
 // ═══════════════════════════════════════
 
 const MONITORING_COPY = 'Early labour can take hours or days — stay home, rest, eat lightly, keep hydrated.\n\nCall your maternity unit when contractions come every 5 minutes or more often.\n\nCall urgently for: waters breaking · any vaginal bleeding · baby moving less than usual · less than 37 weeks pregnant · or any worry.';
@@ -523,25 +523,17 @@ function updateStatus() {
   const avgFreq   = intervals.length ? intervals.reduce((s, v) => s + v, 0) / intervals.length : Infinity;
   const lastFreq  = intervals.length ? intervals[intervals.length - 1] : Infinity;
 
-  // NHS urgent escalations
-  const tenMinAgo    = Date.now() - 10 * 60 * 1000;
-  const anyOver2Min  = recent.some(c => c.duration >= 120);
-  const sixInTenMin  = cs.filter(c => c.startTime >= tenMinAgo).length >= 6;
+  const tenMinAgo      = Date.now() - 10 * 60 * 1000;
+  const lastDur        = cs[cs.length - 1].duration;
+  const longContraction = lastDur > 120 || avgDur > 120;
+  const sixInTenMin    = cs.filter(c => c.startTime >= tenMinAgo).length >= 6;
 
-  // NHS emergency: hypertonus (>2 min), tachysystole (≥6 in 10 min), or
-  // well-established rapid labour (every 3 min, 60 s) — go straight to hospital.
-  const goNow = anyOver2Min
-             || sixInTenMin
-             || (n >= 3 && avgFreq <= 3 && avgDur >= 60);
-
-  // NHS call unit: every 5 min with 45 s+ duration (subsequent baby threshold;
-  // also catches first-baby pattern which is stricter at every 3 min / 60 s).
-  const callUnit = (n >= 3 && avgFreq <= 5 && avgDur >= 45)
-                || (n >= 2 && lastFreq <= 5 && avgDur >= 45);
+  const goNow    = sixInTenMin || longContraction;
+  const callUnit = avgFreq < 5 || lastFreq < 5;
 
   if (goNow) {
     let banner;
-    if (anyOver2Min) {
+    if (longContraction) {
       banner = 'A contraction lasted over 2 minutes — call your maternity unit urgently.';
     } else if (sixInTenMin) {
       banner = '6 contractions in 10 minutes — call your maternity unit urgently.';
