@@ -455,9 +455,9 @@ function buildLog() {
     logBody.innerHTML = '<tr class="log-empty"><td colspan="5">No contractions recorded yet</td></tr>';
     return;
   }
-  // Render all rows (newest first, no animation on restore)
-  [...state.contractions].reverse().forEach((c, ri) => {
-    const i = state.contractions.length - 1 - ri;
+  // Render all rows (newest first, no animation on restore).
+  // appendLogRow prepends, so iterating oldest→newest leaves the newest on top.
+  state.contractions.forEach((c, i) => {
     appendLogRow(c, i + 1, false);
   });
 }
